@@ -7,6 +7,9 @@
       <div id="CAPTCHA"></div>
     </form>
     <button id="enforcement-trigger">trigger element</button>
+    <form method="post" target="_self">
+      <input type="submit" id="submit-id" onclick="return false;" style="display: none" />
+    </form>
   </v-app>
 </template>
 
@@ -17,6 +20,7 @@ export default {
   data() {
     return {
       id: "",
+      data: {},
     };
   },
 
@@ -40,8 +44,27 @@ export default {
     setupEnforcement: function (myEnforcement) {
       myEnforcement.setConfig({
         selector: "#enforcement-trigger",
+        data: {
+          blob: this.data,
+        },
         onCompleted: function (response) {
           console.log(response.token);
+        },
+        onReady: function () {
+          console.log("onReady");
+          document.querySelector("#submit-id").click();
+        },
+        onReset: function () {
+          console.log("onReset");
+        },
+        onShow: function () {
+          console.log("onShow");
+        },
+        onShown: function () {
+          console.log("onShown");
+        },
+        onError: function (response) {
+          console.log("onError");
         },
       });
     },
@@ -58,33 +81,29 @@ export default {
     let key = req.data.key;
     let fielddatareq = await this.$http.get("/api/getdata");
     let data = fielddatareq.data.data;
-    console.log(fielddatareq.data)
+    console.log(fielddatareq.data);
     let id = fielddatareq.data.id;
+    this.data = data;
     this.id = id;
+    let script = await document.createElement("script");
+    await script.setAttribute("src", `/script.js`);
+    script.setAttribute("data-id", "scripltoader");
+    script.setAttribute("data", data);
+    document.head.appendChild(script);
+
     let arkose = await document.createElement("script");
-    
 
     await arkose.setAttribute("type", "text/javascript");
-    await arkose.setAttribute("async", ""),
-    await arkose.setAttribute("defer", ""),
-    await arkose.setAttribute('data-callback', 'this.setupEnforcement'),
+
+    await arkose.setAttribute("data-callback", "loadEnforcement"),
       await arkose.setAttribute(
         "src",
-        `https://api.arkoselabs.com/v2/${key}/api.js`
+        `https://api.arkoselabs.com/v2/476068BF-9607-4799-B53D-966BE98E2B81/api.js`
       );
-   // await document.head.appendChild(arkose);
-
-    await console.log("yes");
-    
-    setTimeout(async () => {
-      await new FunCaptcha({
-        public_key: `${key}`,
-        target_html: "CAPTCHA",
-        data: { blob: data },
-        callback: this.OnSolve,
-      });
-    }, 1000);
-    
+    await arkose.setAttribute("async", ""),
+      await arkose.setAttribute("defer", ""),
+      document.head.appendChild(arkose);
+    console.log("running");
   },
 };
 </script>

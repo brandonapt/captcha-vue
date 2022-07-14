@@ -6,6 +6,7 @@ const cors = require('cors');
 const fetch = require('cross-fetch');
 const path  = require('path');
 const axios = require('axios')
+const funcaptcha = require('funcaptcha')
 
 
 
@@ -21,7 +22,6 @@ async function getCsrf () {
     const raw = await fetch('https://auth.roblox.com/v2/login', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRF-TOKEN': ''
         }
     })
@@ -35,7 +35,7 @@ async function getFieldData() {
     const headers = {
         'authority': 'auth.roblox.com',
         'x-csrf-token': c,
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/536.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36',
         'content-type': 'application/json;charset=UTF-8',
         'accept': 'application/json, text/plain, */*'
     }
@@ -55,6 +55,31 @@ async function getFieldData() {
     return json['failureDetails'][0]['fieldData']
 }
 
+app.get('/loginthing', async (req, res) => {
+    let data= await getFieldData()
+    const token = await funcaptcha.getToken({
+        pkey: "476068BF-9607-4799-B53D-966BE98E2B81", // The public key
+        surl: "https://roblox-api.arkoselabs.com", // Some websites can have a custom service URL
+        data: {
+            blob: data.split(',')[1] // Some websites can have custom data passed: here it is data[blob]
+        },
+        headers: {
+            // You can pass custom headers if you have to, but keep
+            // in mind to pass a user agent when doing that
+            "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'
+        },
+        site: "https://www.roblox.com", // The site parameter, usually not required
+        // NOTE: The proxy will only be used for fetching the token, and not future requests such as getting images and answering captchas
+    })
+
+    const session = new funcaptcha.Session(token, {
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" // Custom user agent for all future requests
+    })
+    console.log(session)
+    console.log(session.getEmbedUrl())
+    let challenge = await session.getChallenge()
+})
+
 async function getKey(type) {
     if (type == null) {
         type = 'ACTION_TYPE_WEB_LOGIN'
@@ -63,6 +88,7 @@ async function getKey(type) {
     const json = await raw.json()
    // console.log(json)
     const key = json.funCaptchaPublicKeys[type]
+    console.log(json.funCaptchaPublicKeys)
     return key
 }
 
